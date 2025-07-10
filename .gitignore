@@ -1,5 +1,6 @@
 # Ignoruj node_modules složku
 frontend/node_modules/
+frontend/.next/
 
 # Ignoruj složku draft
 draft/
