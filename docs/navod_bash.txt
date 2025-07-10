@@ -1,0 +1,12 @@
+# Spuštění
+docker-compose up -d
+
+# Stáhnutí modelu (např. llama3.2)
+docker exec -it ollama ollama pull llama3.2
+
+# Test API
+curl http://localhost:11434/api/generate -d '{
+  "model": "llama3.2",
+  "prompt": "Ahoj, jak se máš?",
+  "stream": false
+}'

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ollama:
     image: ollama/ollama:latest
@@ -8,8 +6,9 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+      - ./init.sh:/init.sh        # Připojení skriptu do kontejneru
     restart: unless-stopped
-    # Pokud máš GPU, odkomentuj následující řádky
+    entrypoint: ["/bin/sh", "-c", "chmod +x /init.sh && /init.sh"]
     deploy:
       resources:
         reservations:
