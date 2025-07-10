@@ -2,7 +2,7 @@ import { streamText } from "ai"
 import { createOllama } from "ollama-ai-provider"
 
 const ollama = createOllama({
-  baseURL: "http://localhost:11434/api",
+  baseURL: "http://ollama:11434/api",
 })
 
 export async function POST(req: Request) {
