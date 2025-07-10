@@ -1,0 +1,88 @@
+# Git
+.git
+.gitignore
+README.md
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.venv
+.env
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache
+.bandit
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node (if any frontend assets)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+docs/
+*.md
+
+# Test files
+tests/
+*_test.py
+test_*.py
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Uploads (will be mounted as volume)
+uploads/
+data/
+
+# Logs (will be mounted or generated at runtime)
+logs/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Database files (should be in volumes)
+*.db
+*.sqlite
+*.sqlite3
