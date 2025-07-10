@@ -9,6 +9,8 @@ services:
       - ./init.sh:/init.sh
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-c", "chmod +x /init.sh && /init.sh"]
+    networks:
+      - mesrag-network
     deploy:
       resources:
         reservations:
@@ -27,6 +29,15 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+      - OLLAMA_BASE_URL=http://ollama:11434/api
+    networks:
+      - mesrag-network
+    depends_on:
+      - ollama
 
 volumes:
   ollama_data:
+
+networks:
+  mesrag-network:
+    driver: bridge

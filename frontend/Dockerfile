@@ -14,7 +14,6 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# !!! Nezapomeň znovu nainstalovat pnpm v této fázi
 RUN npm install -g pnpm
 
 ENV NODE_ENV=production
