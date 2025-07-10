@@ -1,3 +1,6 @@
+# Ignoruj node_modules složku
+frontend/node_modules/
+
 # Ignoruj složku draft
 draft/
 
