@@ -2,9 +2,9 @@
 
 import { useChat } from "@ai-sdk/react"
 import { Send, FileText, Paperclip, Menu, Settings, History, Plus, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { ScrollArea } from "../components/ui/scroll-area"
 import Image from "next/image"
 import { useState } from "react"
 
@@ -23,7 +23,9 @@ export default function MesragChat() {
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Image src="/logo.png" alt="MESRAG Logo" width={32} height={32} className="rounded-lg" />
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-white" />
+                </div>
                 <span className="font-semibold bg-gradient-to-r from-blue-500 via-purple-500 to-red-500 bg-clip-text text-transparent">
                   MESRAG
                 </span>
@@ -95,7 +97,9 @@ export default function MesragChat() {
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
-                <Image src="/logo.png" alt="MESRAG Logo" width={48} height={48} className="rounded-lg" />
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
                 <div>
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-red-500 bg-clip-text text-transparent">
                     MESRAG
