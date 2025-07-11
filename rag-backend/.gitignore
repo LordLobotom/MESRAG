@@ -16,11 +16,17 @@ venv/
 .idea/
 
 # Data & výstupy
-data/
+# Ignoruj obsah složky data/
+data/**
 *.json
 *.pkl
 *.npz
 *.log
+# ALE: nech strukturu složek včetně .gitkeep souborů
+!data/
+!data/import/
+!data/import/**/
+!data/import/**/.gitkeep
 
 # Modely
 *.pt
