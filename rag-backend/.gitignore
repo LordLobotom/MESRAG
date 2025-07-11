@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtualenv
+.venv/
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Data & výstupy
+data/
+*.json
+*.pkl
+*.npz
+*.log
+
+# Modely
+*.pt
+*.bin
+
+# Sentence Transformers cache
+~/.cache/torch/
+~/.cache/huggingface/
