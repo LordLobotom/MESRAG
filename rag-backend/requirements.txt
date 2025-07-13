@@ -5,3 +5,4 @@ pdfplumber
 python-dotenv
 qdrant-client
 sentence-transformers
+pydantic
