@@ -1,4 +1,6 @@
-# --- 📄 import_documents.py ---
+# --- import_documents.py ---
+# Hlavní skript pro import dokumentů (.pdf, .docx), jejich extrakci, chunkování, embedding a nahrání do Qdrantu.
+
 import os
 import shutil
 import logging
@@ -11,6 +13,11 @@ from qdrant_client.models import PointStruct, VectorParams, Distance
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from sentence_transformers import SentenceTransformer
+from pydantic import BaseModel
+
+# Model pro dotazovací endpoint (např. /embed)
+class QueryText(BaseModel):
+    text: str
 
 # ====== Načtení konfigurace z .env ======
 load_dotenv()
@@ -19,10 +26,10 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
 
-# Embedovací model
+# ====== Načtení embedovacího modelu ======
 embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
-# Root projektu
+# ====== Cesty ke složkám ======
 PROJECT_ROOT = Path(__file__).parent.resolve()
 BASE_DIR = PROJECT_ROOT / "data" / "import"
 PENDING_DIR = BASE_DIR / "pending"
@@ -38,7 +45,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
-# ====== Extrakce textu ======
+# ====== Extrakce textu z PDF a DOCX ======
 def extract_text_from_pdf(path):
     text = ""
     with pdfplumber.open(path) as pdf:
@@ -52,11 +59,12 @@ def extract_text_from_docx(path):
     doc = docx.Document(path)
     return "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
 
+# ====== Chunkování textu na menší části ======
 def chunk_text(text, chunk_size=CHUNK_SIZE):
     words = text.split()
     return [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
 
-# ====== Embedding ======
+# ====== Generování embeddingů pomocí modelu ======
 def generate_embeddings(chunks):
     try:
         return embedding_model.encode(chunks, show_progress_bar=False).tolist()
@@ -100,7 +108,7 @@ def infer_location_from_filename(file_name):
         "custom_path": "/".join(location)
     }
 
-# ====== Qdrant ======
+# ====== Práce s Qdrantem ======
 def ensure_qdrant_collection(client, vector_size):
     if not client.collection_exists(COLLECTION_NAME):
         client.create_collection(
@@ -133,7 +141,7 @@ def upload_chunks_to_qdrant(client, chunks, vectors, file_name):
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
-# ====== Zpracování souboru ======
+# ====== Zpracování jednoho souboru ======
 def process_file(file_path, qdrant_client):
     ext = file_path.suffix.lower()
     try:
@@ -161,7 +169,7 @@ def process_file(file_path, qdrant_client):
         logging.error(f"Chyba při zpracování '{file_path.name}': {e}")
         return False
 
-# ====== FastAPI Endpoint ======
+# ====== FastAPI Endpointy ======
 app = FastAPI()
 
 @app.post("/trigger-import")
@@ -195,3 +203,8 @@ def trigger_import():
         "imported": imported,
         "failed": failed
     }
+
+@app.post("/embed")
+def embed_query(query: QueryText):
+    vector = embedding_model.encode([query.text])[0].tolist()
+    return {"vector": vector}
