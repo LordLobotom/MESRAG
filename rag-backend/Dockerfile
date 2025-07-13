@@ -1,14 +1,14 @@
-# Dockerfile
-FROM python:3.11-slim
+FROM python:3.11  # ⬅ místo python:3.11-slim
 
-# Nastavení pracovního adresáře
 WORKDIR /app
 
-# Zkopírování závislostí a projektu
+# Přidej requirements první kvůli cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
+# ⏩ Optimalizované pip install
+RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+# Poté zbytek projektu
 COPY . .
 
-# Spuštění jako FastAPI server na portu 8001
-CMD ["uvicorn", "import_documents:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "importer:app", "--host", "0.0.0.0", "--port", "8001"]
