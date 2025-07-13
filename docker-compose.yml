@@ -54,7 +54,7 @@ services:
 
   importer:
     build:
-      context: ./import_documents.py       # složka s Dockerfile a import_documents.py
+      context: ./rag-backend      # složka s Dockerfile a import_documents.py
       dockerfile: Dockerfile
     container_name: importer
     environment:
