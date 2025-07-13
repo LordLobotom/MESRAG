@@ -42,4 +42,6 @@ is saved as metadata for later filtering.
 
 Use `/trigger-import` to process files from `rag-backend/data/import/pending`.
 Successful files are moved to `processed` and vectors are written to Qdrant.
+# Smazat volume (všechna data)
+docker-compose down -v
 
