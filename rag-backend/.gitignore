@@ -22,6 +22,10 @@ data/**
 *.pkl
 *.npz
 *.log
+# Výjimky – konkrétní PDF soubory
+!data/import/pending/ISA95-Part1_SiteA_AreaB_Line3_QA_CZ.pdf
+!data/import/pending/ISA95-Part2_SiteB_AreaC_Line1_Maintenance_CZ.pdf
+!data/import/pending/ISA95-Part3_SiteA_AreaD_Line2_Production_CZ.pdf
 # ALE: nech strukturu složek včetně .gitkeep souborů
 !data/
 !data/import/

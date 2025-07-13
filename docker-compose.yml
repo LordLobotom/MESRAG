@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   ollama:
     image: ollama/ollama:latest
@@ -41,8 +43,8 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     ports:
-      - "6333:6333"    # REST API
-      - "6334:6334"    # gRPC API (volitelné)
+      - "6333:6333"
+      - "6334:6334"
     restart: unless-stopped
     environment:
       - QDRANT__SERVICE__ENABLE_API_KEY=true
@@ -50,9 +52,30 @@ services:
     networks:
       - mesrag-network
 
+  importer:
+    build:
+      context: ./rag-backend      # složka s Dockerfile a import_documents.py
+      dockerfile: Dockerfile
+    container_name: importer
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_API_KEY=moc-tajny-klic-420
+      - OLLAMA_URL=http://ollama:11434/api/embeddings
+      - OLLAMA_MODEL=deepseek-r1
+    volumes:
+      - importer_data:/app/data
+    depends_on:
+      - qdrant
+      - ollama
+    ports:
+      - "8001:8001"
+    networks:
+      - mesrag-network
+
 volumes:
   ollama_data:
   qdrant_data:
+  importer_data:
 
 networks:
   mesrag-network:
