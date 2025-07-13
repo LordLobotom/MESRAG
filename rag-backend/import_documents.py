@@ -1,3 +1,4 @@
+# --- 📄 import_documents.py ---
 import os
 import shutil
 import logging
@@ -5,12 +6,11 @@ from pathlib import Path
 import uuid
 import pdfplumber
 import docx
-import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from sentence_transformers import SentenceTransformer
 
 # ====== Načtení konfigurace z .env ======
 load_dotenv()
@@ -18,16 +18,13 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 200))
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/embeddings")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1")
+
+# Embedovací model
+embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 # Root projektu
 PROJECT_ROOT = Path(__file__).parent.resolve()
-
-# Složka data/import/
 BASE_DIR = PROJECT_ROOT / "data" / "import"
-
-# Jednotlivé podsložky
 PENDING_DIR = BASE_DIR / "pending"
 PROCESSED_DIR = BASE_DIR / "processed"
 FAILED_DIR = BASE_DIR / "failed"
@@ -59,19 +56,12 @@ def chunk_text(text, chunk_size=CHUNK_SIZE):
     words = text.split()
     return [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
 
-# ====== Ollama embedding ======
+# ====== Embedding ======
 def generate_embeddings(chunks):
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": chunks
-    }
     try:
-        response = requests.post(OLLAMA_URL, json=payload)
-        response.raise_for_status()
-        vectors = response.json().get("embeddings", [])
-        return vectors
+        return embedding_model.encode(chunks, show_progress_bar=False).tolist()
     except Exception as e:
-        logging.error(f"Chyba při získání embeddingů z Ollamy: {e}")
+        logging.error(f"Chyba při generování embeddingů (local): {e}")
         return []
 
 # ====== Metadata a RBAC logika ======

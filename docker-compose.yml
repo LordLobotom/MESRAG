@@ -63,7 +63,7 @@ services:
       - OLLAMA_URL=http://ollama:11434/api/embeddings
       - OLLAMA_MODEL=deepseek-r1
     volumes:
-      - ./data:/app/data
+      - importer_data:/app/data
     depends_on:
       - qdrant
       - ollama
@@ -75,6 +75,7 @@ services:
 volumes:
   ollama_data:
   qdrant_data:
+  importer_data:
 
 networks:
   mesrag-network:
