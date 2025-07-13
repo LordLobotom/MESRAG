@@ -58,3 +58,7 @@ docker-compose down -v
 
 # Smazat volume (všechna data)
 docker-compose down -v
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
