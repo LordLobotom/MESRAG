@@ -1,0 +1,36 @@
+# Ignoruj virtuální prostředí
+venv/
+.env/
+.envrc
+
+# Ignoruj standardní artefakty z Pythonu
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Ignoruj logy a dočasné soubory
+*.log
+*.tmp
+*.swp
+*.bak
+
+# Ignoruj výstupy z testů
+.coverage
+htmlcov/
+.tox/
+pytest_cache/
+
+# Ignoruj cache a IDE soubory
+*.DS_Store
+*.idea/
+*.vscode/
+*.mypy_cache/
+*.ruff_cache/
+*.pytest_cache/
+
+# Buildy a distribuční složky
+build/
+dist/
+*.egg-info/

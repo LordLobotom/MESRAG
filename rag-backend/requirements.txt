@@ -1,3 +1,7 @@
 pdfplumber
 python-docx
-sentence-transformers
+qdrant-client
+python-dotenv
+fastapi
+uvicorn
+requests

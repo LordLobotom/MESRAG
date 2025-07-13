@@ -9,20 +9,25 @@ import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, VectorParams, Distance
 from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
-# ====== Konfigurace ======
-CHUNK_SIZE = 200  # počet slov na chunk
-COLLECTION_NAME = "documents"
+# ====== Načtení konfigurace z .env ======
+load_dotenv()
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 200))
+COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/embeddings")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1")
 
-# tohle by se mělo načíst z .env souboru
-QDRANT_URL = "http://localhost:6333"
-QDRANT_API_KEY = "moc-tajny-klic-420"
-OLLAMA_URL = "http://localhost:11434/api/embeddings"
-OLLAMA_MODEL = "deepseek-r1"
-
-# ====== Cesty ======
+# Root projektu
 PROJECT_ROOT = Path(__file__).parent.resolve()
+
+# Složka data/import/
 BASE_DIR = PROJECT_ROOT / "data" / "import"
+
+# Jednotlivé podsložky
 PENDING_DIR = BASE_DIR / "pending"
 PROCESSED_DIR = BASE_DIR / "processed"
 FAILED_DIR = BASE_DIR / "failed"
@@ -71,7 +76,6 @@ def generate_embeddings(chunks):
 
 # ====== Metadata a RBAC logika ======
 def extract_metadata_from_filename(file_name):
-    # Příklad: ISA95-Part1_SiteA_AreaB_Line3_QA_CZ.docx
     name = file_name.replace(".pdf", "").replace(".docx", "")
     parts = name.split("_")
     metadata = {
@@ -80,16 +84,13 @@ def extract_metadata_from_filename(file_name):
         "language": "cs",
         "department": "Unknown"
     }
-
     if "-" in parts[0]:
         _, part = parts[0].split("-")
         metadata["part"] = part.replace("Part", "Part ").strip()
-
     if len(parts) > 4:
         metadata["department"] = parts[4]
     if len(parts) > 5:
         metadata["language"] = parts[5].lower()
-
     return metadata
 
 def infer_roles_from_department(department):
@@ -121,7 +122,6 @@ def ensure_qdrant_collection(client, vector_size):
 def upload_chunks_to_qdrant(client, chunks, vectors, file_name):
     meta = extract_metadata_from_filename(file_name)
     location = infer_location_from_filename(file_name)
-
     points = [
         PointStruct(
             id=str(uuid.uuid4()),
@@ -131,7 +131,7 @@ def upload_chunks_to_qdrant(client, chunks, vectors, file_name):
                 "source_file": file_name,
                 "standard": meta["standard"],
                 "part": meta["part"],
-                "section": None,  # TODO: Doplnit extrakcí pomocí regexu např. \d+\.\d+
+                "section": None,
                 "role_tags": infer_roles_from_department(meta["department"]),
                 "department": meta["department"],
                 "language": meta["language"],
@@ -139,8 +139,7 @@ def upload_chunks_to_qdrant(client, chunks, vectors, file_name):
                 "location": location,
                 "structure_type": "ISA-95"
             }
-        )
-        for i in range(len(chunks))
+        ) for i in range(len(chunks))
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
@@ -172,15 +171,20 @@ def process_file(file_path, qdrant_client):
         logging.error(f"Chyba při zpracování '{file_path.name}': {e}")
         return False
 
-# ====== Main ======
-def main():
+# ====== FastAPI Endpoint ======
+app = FastAPI()
+
+@app.post("/trigger-import")
+def trigger_import():
     qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     pending_files = list(PENDING_DIR.glob("*.pdf")) + list(PENDING_DIR.glob("*.docx"))
 
     if not pending_files:
-        logging.info("Žádné soubory k importu.")
-        print("Žádné soubory k importu.")
-        return
+        logging.info("Žádné soubory k importu (trigger).")
+        return {"status": "OK", "message": "Žádné soubory k importu."}
+
+    imported = 0
+    failed = 0
 
     for file_path in pending_files:
         success = process_file(file_path, qdrant_client)
@@ -188,70 +192,16 @@ def main():
         try:
             target_dir.mkdir(parents=True, exist_ok=True)
             shutil.move(str(file_path), target_dir / file_path.name)
+            if success:
+                imported += 1
+            else:
+                failed += 1
         except Exception as move_err:
             logging.error(f"Nepodařilo se přesunout '{file_path.name}' do '{target_dir}': {move_err}")
+            failed += 1
 
-# ====== API trigger endpoint (FastAPI) ======
-# Pro budoucí rozšíření – např. přijímání souboru:
-# @app.post("/upload") – přijme PDF/DOCX soubor a rovnou ho zpracuje jako process_file(file, qdrant)
-
-try:
-    from fastapi import FastAPI
-    from fastapi.responses import JSONResponse
-
-    app = FastAPI()
-
-    @app.post("/trigger-import")
-    def trigger_import():
-        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-        pending_files = list(PENDING_DIR.glob("*.pdf")) + list(PENDING_DIR.glob("*.docx"))
-
-        if not pending_files:
-            logging.info("Žádné soubory k importu (trigger).")
-            return {"status": "OK", "message": "Žádné soubory k importu."}
-
-        imported = 0
-        failed = 0
-
-        for file_path in pending_files:
-            success = process_file(file_path, qdrant_client)
-            target_dir = PROCESSED_DIR if success else FAILED_DIR
-            try:
-                target_dir.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(file_path), target_dir / file_path.name)
-                if success:
-                    imported += 1
-                else:
-                    failed += 1
-            except Exception as move_err:
-                logging.error(f"Nepodařilo se přesunout '{file_path.name}' do '{target_dir}': {move_err}")
-                failed += 1
-
-        return {
-            "status": "OK",
-            "imported": imported,
-            "failed": failed
-        }
-
-except ImportError:
-    # Pokud FastAPI není nainstalované, běž jako CLI skript
-    def main():
-        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-        pending_files = list(PENDING_DIR.glob("*.pdf")) + list(PENDING_DIR.glob("*.docx"))
-
-        if not pending_files:
-            logging.info("Žádné soubory k importu.")
-            print("Žádné soubory k importu.")
-            return
-
-        for file_path in pending_files:
-            success = process_file(file_path, qdrant_client)
-            target_dir = PROCESSED_DIR if success else FAILED_DIR
-            try:
-                target_dir.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(file_path), target_dir / file_path.name)
-            except Exception as move_err:
-                logging.error(f"Nepodařilo se přesunout '{file_path.name}' do '{target_dir}': {move_err}")
-
-if __name__ == "__main__":
-    main()
+    return {
+        "status": "OK",
+        "imported": imported,
+        "failed": failed
+    }
