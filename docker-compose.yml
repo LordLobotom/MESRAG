@@ -1,16 +1,12 @@
-version: "3.9"
-
 services:
   ollama:
-    image: ollama/ollama:latest
+    build: .
     container_name: ollama
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-      - ./init.sh:/init.sh
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c", "chmod +x /init.sh && /init.sh"]
     networks:
       - mesrag-network
     deploy:
@@ -32,6 +28,7 @@ services:
     environment:
       - NODE_ENV=production
       - OLLAMA_BASE_URL=http://ollama:11434/api
+      - BACKEND_URL=http://importer:8001
     networks:
       - mesrag-network
     depends_on:
@@ -60,7 +57,7 @@ services:
     environment:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY=moc-tajny-klic-420
-      - OLLAMA_URL=http://ollama:11434/api/embeddings
+      - OLLAMA_URL=http://ollama:11434/api
       - OLLAMA_MODEL=deepseek-r1
     volumes:
       - importer_data:/app/data

@@ -291,7 +291,7 @@ Odpověz na dotaz na základě poskytnutého kontextu. Pokud kontext neobsahuje 
 
         # 4. Volání na Ollama
         ollama_response = requests.post(
-            f"{OLLAMA_URL}/api/generate",
+            f"{OLLAMA_URL}/generate",
             json={
                 "model": OLLAMA_MODEL,
                 "prompt": user_prompt,
