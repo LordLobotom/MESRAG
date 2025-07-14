@@ -14,10 +14,22 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from sentence_transformers import SentenceTransformer
 from pydantic import BaseModel
+import requests
+from typing import List, Optional
 
 # Model pro dotazovací endpoint (např. /embed)
 class QueryText(BaseModel):
     text: str
+
+# Model pro chat endpoint
+class ChatRequest(BaseModel):
+    query: str
+    conversation_history: Optional[List[dict]] = []
+
+class ChatResponse(BaseModel):
+    response: str
+    sources: Optional[List[str]] = []
+    relevant_chunks: Optional[List[dict]] = []
 
 # ====== Načtení konfigurace z .env ======
 load_dotenv()
@@ -25,6 +37,8 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 200))
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1")
 
 # ====== Načtení embedovacího modelu ======
 embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -141,6 +155,47 @@ def upload_chunks_to_qdrant(client, chunks, vectors, file_name):
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
+# ====== RAG funkce pro vyhledávání v QDrant ======
+def search_relevant_documents(query: str, limit: int = 5):
+    """Vyhledá relevantní dokumenty v QDrant na základě query"""
+    try:
+        qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+        
+        # Vygeneruj embedding pro query
+        query_vector = embedding_model.encode([query])[0].tolist()
+        
+        # Vyhledej v QDrant
+        search_results = qdrant_client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            limit=limit,
+            with_payload=True
+        )
+        
+        return search_results
+    except Exception as e:
+        logging.error(f"Chyba při vyhledávání v QDrant: {e}")
+        return []
+
+def prepare_context_from_results(search_results):
+    """Připraví kontext z nalezených dokumentů"""
+    if not search_results:
+        return "Žádné relevantní dokumenty nebyly nalezeny."
+    
+    context_parts = []
+    sources = []
+    
+    for result in search_results:
+        chunk = result.payload.get("chunk", "")
+        source_file = result.payload.get("source_file", "Unknown")
+        department = result.payload.get("department", "Unknown")
+        
+        context_parts.append(f"[Zdroj: {source_file}, Oddělení: {department}]\n{chunk}")
+        if source_file not in sources:
+            sources.append(source_file)
+    
+    return "\n\n".join(context_parts), sources
+
 # ====== Zpracování jednoho souboru ======
 def process_file(file_path, qdrant_client):
     ext = file_path.suffix.lower()
@@ -208,3 +263,70 @@ def trigger_import():
 def embed_query(query: QueryText):
     vector = embedding_model.encode([query.text])[0].tolist()
     return {"vector": vector}
+
+@app.post("/chat")
+def chat_endpoint(request: ChatRequest):
+    """Hlavní chat endpoint s RAG funkcionalitou"""
+    try:
+        # 1. Vyhledej relevantní dokumenty v QDrant
+        search_results = search_relevant_documents(request.query, limit=5)
+        
+        # 2. Připrav kontext z nalezených dokumentů
+        context, sources = prepare_context_from_results(search_results)
+        
+        # 3. Připrav prompt pro Ollama
+        system_prompt = """Jsi MESRAG, inteligentní asistent specializovaný na průmyslové dokumenty a procesy. 
+Pomáháš uživatelům pochopit, analyzovat a získávat poznatky z průmyslové dokumentace, technických manuálů, 
+bezpečnostních postupů, dokumentů o souladu s předpisy a provozních směrnic.
+
+Poskytuj jasné, přesné a praktické odpovědi. Při diskusi o průmyslových procesech upřednostňuj bezpečnost a soulad s předpisy.
+Odpovídej ve stejném jazyce, jakým se uživatel ptá."""
+
+        user_prompt = f"""Kontext z dokumentů:
+{context}
+
+Uživatelský dotaz: {request.query}
+
+Odpověz na dotaz na základě poskytnutého kontextu. Pokud kontext neobsahuje relevantní informace, řekni to uživateli a poskytni obecnou odpověď."""
+
+        # 4. Volání na Ollama
+        ollama_response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": user_prompt,
+                "system": system_prompt,
+                "stream": False
+            },
+            timeout=60
+        )
+        
+        if ollama_response.status_code != 200:
+            raise Exception(f"Ollama API error: {ollama_response.status_code}")
+            
+        ollama_data = ollama_response.json()
+        
+        # 5. Připrav odpověď
+        response_text = ollama_data.get("response", "Nepodařilo se získat odpověď z modelu.")
+        
+        return ChatResponse(
+            response=response_text,
+            sources=sources,
+            relevant_chunks=[{
+                "chunk": result.payload.get("chunk", "")[:200] + "...",
+                "source": result.payload.get("source_file", "Unknown"),
+                "score": result.score
+            } for result in search_results[:3]]
+        )
+        
+    except Exception as e:
+        logging.error(f"Chyba v chat endpointu: {e}")
+        return ChatResponse(
+            response=f"Omlouvám se, došlo k chybě při zpracování vašeho dotazu: {str(e)}",
+            sources=[],
+            relevant_chunks=[]
+        )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
