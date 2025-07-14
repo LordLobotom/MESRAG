@@ -15,7 +15,7 @@ RUN which uvicorn && uvicorn --version
 COPY . .
 
 # FastAPI API mód (port 8001)
-CMD ["uvicorn", "import_documents:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "backend:app", "--host", "0.0.0.0", "--port", "8001"]
 
 # Alternativně CLI režim:
 # CMD ["python", "importer.py"]
