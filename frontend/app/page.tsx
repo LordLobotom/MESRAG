@@ -1,16 +1,132 @@
 "use client"
 
-import { useChat } from "@ai-sdk/react"
 import { Send, FileText, Paperclip, Menu, Settings, History, Plus, X } from "lucide-react"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { ScrollArea } from "../components/ui/scroll-area"
-import Image from "next/image"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
+
+interface Message {
+  id: string
+  role: "user" | "assistant"
+  content: string
+}
 
 export default function MesragChat() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat()
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll k poslednej správe
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    }
+  }, [messages])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || isLoading) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: input
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInput("")
+    setIsLoading(true)
+
+    try {
+      // Vytvoř assistant message s prázdným obsahem
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: ""
+      }
+      
+      setMessages(prev => [...prev, assistantMessage])
+
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage]
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok')
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+
+      if (!reader) {
+        throw new Error('No reader available')
+      }
+
+      let buffer = ""
+      let fullContent = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ""
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6)
+            
+            if (data === '[DONE]') {
+              console.log("Stream finished")
+              break
+            }
+
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.content) {
+                fullContent += parsed.content
+                console.log("Adding content:", parsed.content)
+                
+                // Aktualizuj assistant message
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === assistantMessage.id 
+                      ? { ...msg, content: fullContent }
+                      : msg
+                  )
+                )
+              }
+            } catch (e) {
+              console.error("Error parsing JSON:", e, "Data:", data)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 2).toString(),
+        role: "assistant",
+        content: "Omlouvám se, došlo k chybě při zpracování vašeho dotazu."
+      }])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }
 
   return (
     <div className="min-h-screen bg-white flex">
@@ -45,7 +161,10 @@ export default function MesragChat() {
           <div className="p-4">
             <Button
               className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                setMessages([])
+                setInput("")
+              }}
             >
               <Plus className="w-4 h-4 mr-2" />
               New Chat
@@ -118,7 +237,7 @@ export default function MesragChat() {
 
           {/* Chat Messages */}
           <div className="flex-1 bg-white">
-            <ScrollArea className="h-full p-6">
+            <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="bg-gray-50 rounded-2xl p-8 max-w-md border border-gray-100">

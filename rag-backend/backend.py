@@ -275,19 +275,22 @@ def chat_endpoint(request: ChatRequest):
         context, sources = prepare_context_from_results(search_results)
         
         # 3. Připrav prompt pro Ollama
-        system_prompt = """Jsi MESRAG, inteligentní asistent specializovaný na průmyslové dokumenty a procesy. 
-Pomáháš uživatelům pochopit, analyzovat a získávat poznatky z průmyslové dokumentace, technických manuálů, 
-bezpečnostních postupů, dokumentů o souladu s předpisy a provozních směrnic.
+        system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and processes. 
+You help users understand, analyze, and extract insights from industrial documentation, technical manuals, 
+safety procedures, compliance documents, and operational guidelines. 
 
-Poskytuj jasné, přesné a praktické odpovědi. Při diskusi o průmyslových procesech upřednostňuj bezpečnost a soulad s předpisy.
-Odpovídej ve stejném jazyce, jakým se uživatel ptá."""
+Provide clear, accurate, and actionable responses. When discussing industrial processes, 
+prioritize safety and compliance. Be concise but thorough in your explanations.
 
-        user_prompt = f"""Kontext z dokumentů:
+Always respond in the same language as the user's question."""
+
+        user_prompt = f""" User's context:
 {context}
 
-Uživatelský dotaz: {request.query}
+User's question: {request.query}
 
-Odpověz na dotaz na základě poskytnutého kontextu. Pokud kontext neobsahuje relevantní informace, řekni to uživateli a poskytni obecnou odpověď."""
+Try to answer the user's question based on the provided context.
+If the context is insufficient, create a response that try to address the user's query using your knowledge."""
 
         # 4. Volání na Ollama
         ollama_response = requests.post(
@@ -308,7 +311,12 @@ Odpověz na dotaz na základě poskytnutého kontextu. Pokud kontext neobsahuje 
         
         # 5. Připrav odpověď
         response_text = ollama_data.get("response", "Nepodařilo se získat odpověď z modelu.")
+
+        # Odfiltruj <think> bloky z DeepSeek-R1 odpovědi
+        import re
+        response_text = re.sub(r'<think>[\s\S]*?</think>', '', response_text).strip()
         
+        # Vrať jen response text pro frontend streaming
         return ChatResponse(
             response=response_text,
             sources=sources,

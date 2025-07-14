@@ -28,7 +28,7 @@ services:
     environment:
       - NODE_ENV=production
       - OLLAMA_BASE_URL=http://ollama:11434/api
-      - BACKEND_URL=http://importer:8001
+      - BACKEND_URL=http://backend:8001
     networks:
       - mesrag-network
     depends_on:
@@ -49,18 +49,18 @@ services:
     networks:
       - mesrag-network
 
-  importer:
+  backend:
     build:
       context: ./rag-backend      # složka s Dockerfile a import_documents.py
       dockerfile: Dockerfile
-    container_name: importer
+    container_name: backend
     environment:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY=moc-tajny-klic-420
       - OLLAMA_URL=http://ollama:11434/api
       - OLLAMA_MODEL=deepseek-r1
     volumes:
-      - importer_data:/app/data
+      - backend_data:/app/data
     depends_on:
       - qdrant
       - ollama
@@ -72,7 +72,7 @@ services:
 volumes:
   ollama_data:
   qdrant_data:
-  importer_data:
+  backend_data:
 
 networks:
   mesrag-network:
