@@ -34,7 +34,11 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 ---
 
 ## 🚀 Spuštění
+0. **Build kontejnery:**
 
+   ```bash
+   docker-compose build
+   ```
 1. **Spusť kontejnery:**
 
    ```bash
@@ -64,10 +68,13 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 ## 🛣️ Roadmap / Plánované funkce
 
 * Základní RAG stack ✅
+  
 * Upload dokumentů přes frontend ✅
-
   * Formulář pro nahrání souboru, ukládání do `pending`, volání importu ✅
-* Authentik + NGINX
+    
+* NGINX ✅
+  
+* Authentik
 
   * Reverzní proxy a autentizace (SSO, RBAC), ochrana endpointů
 * RBAC při vyhledávání
