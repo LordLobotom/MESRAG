@@ -28,6 +28,7 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 ├── rag-backend/         # FastAPI backend pro import a dotazy
 │   └── data/import/     # Složky pending / processed / failed
 ├── docs/                # Dokumentace a podpůrné soubory
+├── nginx/               # nginx
 └── init.sh              # Init script pro Ollamu
 ```
 
