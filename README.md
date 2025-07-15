@@ -66,7 +66,7 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 * Základní RAG stack ✅
 * Upload dokumentů přes frontend ✅
 
-  * Formulář pro nahrání souboru, ukládání do `pending`, volání importu
+  * Formulář pro nahrání souboru, ukládání do `pending`, volání importu ✅
 * Authentik + NGINX
 
   * Reverzní proxy a autentizace (SSO, RBAC), ochrana endpointů
