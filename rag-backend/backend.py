@@ -190,9 +190,9 @@ def prepare_context_from_results(search_results):
     max_score = max([res.score for res in search_results])
     fallback_mode = max_score < RELEVANCE_THRESHOLD
     logging.info(f"Max relevance score: {max_score}, Fallback: {fallback_mode}")
-    filtered_results = [res for res in search_results if res.score >= RELEVANCE_THRESHOLD]
+    #filtered_results = [res for res in search_results if res.score >= RELEVANCE_THRESHOLD]
     
-    for result in filtered_results:
+    for result in search_results:
         chunk = result.payload.get("chunk", "")
         source_file = result.payload.get("source_file", "Unknown")
         department = result.payload.get("department", "Unknown")
@@ -282,33 +282,56 @@ def chat_endpoint(request: ChatRequest):
         context, sources, fallback_mode = prepare_context_from_results(search_results)
         
         # 3. Připrav prompt pro Ollama
-        if fallback_mode:
-            user_prompt = f"""No relevant context was found in the provided documents.
-
-                User's question: {request.query}
-
-                Please provide a helpful and well-informed answer using your knowledge of industrial systems, automation, and standards such as ISA-95, MES, or OPC UA. Be practical, clear, and accurate."""
-        else:
-            system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and manufacturing processes.
-                You help users understand, analyze, and extract insights from technical documentation, safety protocols, compliance standards, and operational procedures.
-
-                Prioritize information from the provided context when available. When documents do not contain a clear answer, use your general industrial knowledge to assist the user.
-
-                Always provide clear, accurate, and actionable responses. Mention the source (e.g., document name or metadata) when relevant. Be concise but thorough, and prioritize safety, standards, and practical recommendations.
-
-                Always respond in the same language as the user's question."""
+        system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and manufacturing processes.
+            
+            You help users understand, analyze, and extract insights from technical documentation, safety procedures, compliance standards, and operational guidelines.
+            
+            Always prioritize information from the provided context when it contains a relevant answer. When the context is insufficient or does not address the question, respond using your expert-level knowledge of industrial systems, automation, safety practices, and standards such as ISA-95 or OPC UA.
+            
+            Your responses must be clear, concise, and practical. When possible, reference specific sources (e.g., document name, section, role, or metadata). Avoid vague or speculative links to the context.
+           
+            Prioritize safety, standardization, and real-world applicability. Always respond in the same language as the user's question."""
 
 
-            user_prompt = f""" User's context:
-                {context}
 
-                User's question: {request.query}
+        user_prompt = f""" User's context:
+            
+            {context}
+            
+            User's question: {request.query}
+            
+            Instructions:
+            
+            1. If the context contains a clear and relevant answer, use it as the basis for your response. Reference the source explicitly (e.g., document name, section, department, or role) when appropriate.
+            
+            2. If the context does not contain relevant information, do **not** attempt to infer weak or indirect connections. Instead:
+                - Clearly state that the documents do not address the question directly.
+                - Then, provide a helpful, accurate, and well-informed answer using your general industrial expertise — including knowledge of automation systems, production processes, safety protocols, and standards such as ISA-95 or OPC UA.
+            
+            Your response should be concise yet thorough, technically sound, and practically useful. Prioritize safety, standardization, and actionable insight. Always respond in the same language as the user's question."""
 
-                If the context includes clearly relevant information, use it as the primary basis for your answer. Cite the specific source (e.g., document name, section, department, or role) when applicable.
 
-                If the context does not provide a direct answer, do not try to infer weak or unrelated connections. Instead, clearly state that no relevant document was found, and provide a clear, accurate, and practical response using your knowledge of industrial systems, automation, safety procedures, or standards like ISA-95 or OPC UA.
+        # if fallback_mode:
+        #     system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and manufacturing processes.
+        #         Always respond in the same language as the user's question."""
+        #     user_prompt = f"""No relevant context was found in the provided documents.
+        #         User's question: {request.query}
+        #         Please provide a helpful and well-informed answer using your knowledge of industrial systems, automation, and standards such as ISA-95, MES, or OPC UA. Be practical, clear, and accurate.
+        #         Always respond in the same language as the user's question."""
+        # else:
+        #     system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and manufacturing processes.
+        #         You help users understand, analyze, and extract insights from technical documentation, safety protocols, compliance standards, and operational procedures.
+        #         Prioritize information from the provided context when available. When documents do not contain a clear answer, use your general industrial knowledge to assist the user.
+        #         Always provide clear, accurate, and actionable responses. Mention the source (e.g., document name or metadata) when relevant. Be concise but thorough, and prioritize safety, standards, and practical recommendations.
+        #         Always respond in the same language as the user's question."""
 
-                Your response should be concise but thorough, prioritizing safety, standardization, and actionable insight. Always respond in the same language as the user's question."""
+        #     user_prompt = f""" User's context:
+        #         {context}
+        #         User's question: {request.query}
+        #         If the context includes clearly relevant information, use it as the primary basis for your answer. Cite the specific source (e.g., document name, section, department, or role) when applicable.
+        #         If the context does not provide a direct answer, do not try to infer weak or unrelated connections. Instead, clearly state that no relevant document was found, and provide a clear, accurate, and practical response using your knowledge of industrial systems, automation, safety procedures, or standards like ISA-95 or OPC UA.
+
+        #         Your response should be concise but thorough, prioritizing safety, standardization, and actionable insight. Always respond in the same language as the user's question."""
 
         # 4. Volání na Ollama
         ollama_response = requests.post(
