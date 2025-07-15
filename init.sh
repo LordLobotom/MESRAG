@@ -1,13 +1,11 @@
-﻿#!/bin/sh
-
-echo "[INIT] đźš€ SpouĹˇtĂ­m Ollama server na pozadĂ­..."
+﻿echo "[INIT] poustení Ollama serveru­..."
 ollama serve &
 
-echo "[INIT] đź§  ÄŚekĂˇm, aĹľ server nabÄ›hne..."
-sleep 10   # poÄŤkej pĂˇr sekund, aby se server spustil
+echo "[INIT] Cekam az server nabehne..."
+sleep 10   # cekani par sekund
 
-echo "[INIT] đź§  Stahuji model deepseek-1r"
+echo "[INIT] Stahuji model deepseek-1r"
 ollama pull deepseek-r1
 
-echo "[INIT] âś… Hotovo, ÄŤekĂˇm na pĹ™Ă­kazy..."
-wait     # ÄŤekĂˇ na ukonÄŤenĂ­ ollama serve (nebude, protoĹľe bÄ›ĹľĂ­ na pozadĂ­)
+echo "[INIT] Hotovo, cekam na prikazy..."
+wait     # cekani

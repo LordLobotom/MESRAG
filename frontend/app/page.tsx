@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { ScrollArea } from "../components/ui/scroll-area"
 import { useState, useRef, useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 interface Message {
   id: string
@@ -18,6 +19,7 @@ export default function MesragChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   // Auto-scroll k poslednej správe
   useEffect(() => {
@@ -178,7 +180,7 @@ export default function MesragChat() {
                 <History className="w-4 h-4 mr-3" />
                 Chat History
               </Button>
-              <Button variant="ghost" className="w-full justify-start text-gray-700 hover:bg-gray-100 rounded-xl">
+              <Button variant="ghost" className="w-full justify-start text-gray-700 hover:bg-gray-100 rounded-xl" onClick={() => router.push("/documents")}>
                 <FileText className="w-4 h-4 mr-3" />
                 Documents
               </Button>
@@ -227,7 +229,7 @@ export default function MesragChat() {
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" className="text-gray-700 hover:bg-gray-100">
+                <Button variant="ghost" size="sm" className="text-gray-700 hover:bg-gray-100"  onClick={() => router.push("/documents")}>
                   <FileText className="w-4 h-4 mr-2" />
                   Documents
                 </Button>

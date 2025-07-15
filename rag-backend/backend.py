@@ -39,6 +39,7 @@ QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1")
+RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.7))
 
 # ====== Načtení embedovacího modelu ======
 embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -184,8 +185,14 @@ def prepare_context_from_results(search_results):
     
     context_parts = []
     sources = []
+
+    # Zjisti, zda je třeba použít fallback mód a odfiltrovat nízké skóre
+    max_score = max([res.score for res in search_results])
+    fallback_mode = max_score < RELEVANCE_THRESHOLD
+    logging.info(f"Max relevance score: {max_score}, Fallback: {fallback_mode}")
+    filtered_results = [res for res in search_results if res.score >= RELEVANCE_THRESHOLD]
     
-    for result in search_results:
+    for result in filtered_results:
         chunk = result.payload.get("chunk", "")
         source_file = result.payload.get("source_file", "Unknown")
         department = result.payload.get("department", "Unknown")
@@ -194,7 +201,7 @@ def prepare_context_from_results(search_results):
         if source_file not in sources:
             sources.append(source_file)
     
-    return "\n\n".join(context_parts), sources
+    return "\n\n".join(context_parts), sources, fallback_mode
 
 # ====== Zpracování jednoho souboru ======
 def process_file(file_path, qdrant_client):
@@ -272,25 +279,36 @@ def chat_endpoint(request: ChatRequest):
         search_results = search_relevant_documents(request.query, limit=5)
         
         # 2. Připrav kontext z nalezených dokumentů
-        context, sources = prepare_context_from_results(search_results)
+        context, sources, fallback_mode = prepare_context_from_results(search_results)
         
         # 3. Připrav prompt pro Ollama
-        system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and processes. 
-You help users understand, analyze, and extract insights from industrial documentation, technical manuals, 
-safety procedures, compliance documents, and operational guidelines. 
+        if fallback_mode:
+            user_prompt = f"""No relevant context was found in the provided documents.
 
-Provide clear, accurate, and actionable responses. When discussing industrial processes, 
-prioritize safety and compliance. Be concise but thorough in your explanations.
+                User's question: {request.query}
 
-Always respond in the same language as the user's question."""
+                Please provide a helpful and well-informed answer using your knowledge of industrial systems, automation, and standards such as ISA-95, MES, or OPC UA. Be practical, clear, and accurate."""
+        else:
+            system_prompt = """You are MESRAG, an intelligent assistant specialized in industrial documents and manufacturing processes.
+                You help users understand, analyze, and extract insights from technical documentation, safety protocols, compliance standards, and operational procedures.
 
-        user_prompt = f""" User's context:
-{context}
+                Prioritize information from the provided context when available. When documents do not contain a clear answer, use your general industrial knowledge to assist the user.
 
-User's question: {request.query}
+                Always provide clear, accurate, and actionable responses. Mention the source (e.g., document name or metadata) when relevant. Be concise but thorough, and prioritize safety, standards, and practical recommendations.
 
-Try to answer the user's question based on the provided context.
-If the context is insufficient, create a response that try to address the user's query using your knowledge."""
+                Always respond in the same language as the user's question."""
+
+
+            user_prompt = f""" User's context:
+                {context}
+
+                User's question: {request.query}
+
+                If the context includes clearly relevant information, use it as the primary basis for your answer. Cite the specific source (e.g., document name, section, department, or role) when applicable.
+
+                If the context does not provide a direct answer, do not try to infer weak or unrelated connections. Instead, clearly state that no relevant document was found, and provide a clear, accurate, and practical response using your knowledge of industrial systems, automation, safety procedures, or standards like ISA-95 or OPC UA.
+
+                Your response should be concise but thorough, prioritizing safety, standardization, and actionable insight. Always respond in the same language as the user's question."""
 
         # 4. Volání na Ollama
         ollama_response = requests.post(
