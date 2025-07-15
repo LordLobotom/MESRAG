@@ -53,9 +53,7 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 
 3. **Otevři aplikaci:**
 
-   * Chat frontend: [http://localhost:3000](http://localhost:3000)
-   * Import API: [http://localhost:8001/trigger-import](http://localhost:8001/trigger-import)
-   * Embed API: [http://localhost:8001/embed](http://localhost:8001/embed)
+   * Chat frontend: [http://localhost](http://localhost)
 
 4. **(Volitelně) spusť testy:**
 
