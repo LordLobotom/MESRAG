@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // Trigger import process
     try {
-      const importResponse = await fetch("http://backend:8001/trigger-import", {
+      const importResponse = await fetch("/trigger-import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
