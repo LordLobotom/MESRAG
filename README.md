@@ -28,13 +28,18 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 ├── rag-backend/         # FastAPI backend pro import a dotazy
 │   └── data/import/     # Složky pending / processed / failed
 ├── docs/                # Dokumentace a podpůrné soubory
+├── nginx/               # nginx
 └── init.sh              # Init script pro Ollamu
 ```
 
 ---
 
 ## 🚀 Spuštění
+0. **Build kontejnery:**
 
+   ```bash
+   docker-compose build
+   ```
 1. **Spusť kontejnery:**
 
    ```bash
@@ -49,9 +54,7 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 
 3. **Otevři aplikaci:**
 
-   * Chat frontend: [http://localhost:3000](http://localhost:3000)
-   * Import API: [http://localhost:8001/trigger-import](http://localhost:8001/trigger-import)
-   * Embed API: [http://localhost:8001/embed](http://localhost:8001/embed)
+   * Chat frontend: [http://localhost](http://localhost)
 
 4. **(Volitelně) spusť testy:**
 
@@ -64,10 +67,13 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
 ## 🛣️ Roadmap / Plánované funkce
 
 * Základní RAG stack ✅
+  
 * Upload dokumentů přes frontend ✅
-
   * Formulář pro nahrání souboru, ukládání do `pending`, volání importu ✅
-* Authentik + NGINX
+    
+* NGINX ✅
+  
+* Authentik
 
   * Reverzní proxy a autentizace (SSO, RBAC), ochrana endpointů
 * RBAC při vyhledávání
