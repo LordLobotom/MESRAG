@@ -1,9 +1,16 @@
 #!/bin/sh
 set -e
 
-echo "[INIT] Pulling Ollama model..."
+echo "[INIT] starting ollama serve in background..."
+ollama serve &
+
+echo "[INIT] waiting for ollama to be ready..."
+sleep 5
+
+echo "[INIT] pulling Ollama model..."
 MODEL_NAME=${OLLAMA_MODEL:-deepseek-r1}
 echo "[INIT] Model: $MODEL_NAME"
-ollama pull "$MODEL_NAME"
+ollama pull "$MODEL_NAME" || true
 
-echo "[INIT] Done. Starting server via entrypoint."
+echo "[INIT] ready; keeping server in foreground"
+wait
