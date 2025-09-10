@@ -70,7 +70,7 @@ services:
       - OLLAMA_MODEL=gpt-oss:Q4_0
       - RELEVANCE_THRESHOLD=0.5
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/embed'); print('ok')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health'); print('ok')"]
       interval: 20s
       timeout: 5s
       retries: 10

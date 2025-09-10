@@ -235,6 +235,10 @@ def process_file(file_path, qdrant_client):
 # ====== FastAPI Endpointy ======
 app = FastAPI()
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/trigger-import")
 def trigger_import():
     qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
