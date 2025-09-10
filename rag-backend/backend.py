@@ -42,8 +42,18 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss")
 RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.7))
 
-# ====== Načtení embedovacího modelu ======
-embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+# ====== Načtení embedovacího modelu (líné) ======
+EMBEDDING_MODEL_NAME = os.getenv(
+    "EMBEDDING_MODEL",
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+)
+embedding_model = None
+
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+    return embedding_model
 
 # ====== Cesty ke složkám ======
 PROJECT_ROOT = Path(__file__).parent.resolve()
@@ -83,7 +93,8 @@ def chunk_text(text, chunk_size=CHUNK_SIZE):
 # ====== Generování embeddingů pomocí modelu ======
 def generate_embeddings(chunks):
     try:
-        return embedding_model.encode(chunks, show_progress_bar=False).tolist()
+        model = get_embedding_model()
+        return model.encode(chunks, show_progress_bar=False).tolist()
     except Exception as e:
         logging.error(f"Chyba při generování embeddingů (local): {e}")
         return []
@@ -164,7 +175,8 @@ def search_relevant_documents(query: str, limit: int = 5):
         qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
         
         # Vygeneruj embedding pro query
-        query_vector = embedding_model.encode([query])[0].tolist()
+        model = get_embedding_model()
+        query_vector = model.encode([query])[0].tolist()
         
         # Vyhledej v QDrant
         search_results = qdrant_client.search(
