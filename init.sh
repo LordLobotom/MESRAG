@@ -1,11 +1,9 @@
-﻿echo "[INIT] poustení Ollama serveru­..."
-ollama serve &
+#!/bin/sh
+set -e
 
-echo "[INIT] Cekam az server nabehne..."
-sleep 10   # cekani par sekund
+echo "[INIT] Pulling Ollama model..."
+MODEL_NAME=${OLLAMA_MODEL:-deepseek-r1}
+echo "[INIT] Model: $MODEL_NAME"
+ollama pull "$MODEL_NAME"
 
-echo "[INIT] Stahuji model deepseek-1r"
-ollama pull deepseek-r1
-
-echo "[INIT] Hotovo, cekam na prikazy..."
-wait     # cekani
+echo "[INIT] Done. Starting server via entrypoint."
