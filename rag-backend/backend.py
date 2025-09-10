@@ -16,6 +16,8 @@ from sentence_transformers import SentenceTransformer
 from pydantic import BaseModel
 import requests
 from typing import List, Optional
+import threading
+import time
 
 # Model pro dotazovací endpoint (např. /embed)
 class QueryText(BaseModel):
@@ -360,7 +362,7 @@ def chat_endpoint(request: ChatRequest):
                 "stream": False,
                 "options": {
                     # keep inference light for low VRAM / faster responses
-                    "num_predict": 256,
+                    "num_predict": 128,
                     "num_ctx": 2048,
                     "temperature": 0.2
                 }
@@ -398,6 +400,42 @@ def chat_endpoint(request: ChatRequest):
             sources=[],
             relevant_chunks=[]
         )
+
+# ====== Startup warm-up (non-blocking) ======
+def _warmup():
+    try:
+        logging.info("Warmup: initializing embedding model...")
+        _ = get_embedding_model()
+    except Exception as e:
+        logging.warning(f"Warmup: embedding model init failed: {e}")
+    try:
+        # wait for ollama to be ready, then cheap generate
+        for _ in range(12):  # up to ~60s
+            try:
+                r = requests.get(f"{OLLAMA_URL}/tags", timeout=5)
+                if r.status_code == 200:
+                    break
+            except Exception:
+                pass
+            time.sleep(5)
+        logging.info("Warmup: calling ollama generate (quick)...")
+        requests.post(
+            f"{OLLAMA_URL}/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": "ok",
+                "stream": False,
+                "options": {"num_predict": 1, "temperature": 0.0},
+            },
+            timeout=30,
+        )
+    except Exception as e:
+        logging.warning(f"Warmup: ollama generate failed: {e}")
+
+@app.on_event("startup")
+def on_startup():
+    t = threading.Thread(target=_warmup, name="warmup", daemon=True)
+    t.start()
 
 if __name__ == "__main__":
     import uvicorn
