@@ -46,10 +46,10 @@ Import dokumentů probíhá přes FastAPI backend, který z textu extrahuje meta
    docker-compose up -d
    ```
 
-2. **Stáhni model (např. deepseek-r1):**
+2. **Stáhni model (gpt-oss):**
 
    ```bash
-   docker exec -it ollama ollama pull deepseek-r1
+   docker exec -it ollama ollama pull gpt-oss
    ```
 
 3. **Otevři aplikaci:**
