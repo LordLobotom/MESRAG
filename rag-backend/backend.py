@@ -37,7 +37,8 @@ CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", 200))
 COLLECTION_NAME = os.getenv("COLLECTION_NAME", "documents")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
+# Default points to API path to be compatible with latest Ollama
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1")
 RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.7))
 
