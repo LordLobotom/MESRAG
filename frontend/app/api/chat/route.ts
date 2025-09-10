@@ -11,14 +11,28 @@ export async function POST(req: Request) {
         ? "http://backend:8001"
         : "http://localhost:8001")
 
-    const response = await fetch(backendUrl + "/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: lastMessage.content,
-        conversation_history: messages.slice(0, -1),
-      }),
-    })
+    let response: Response | null = null
+    let lastErr: any = null
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        response = await fetch(backendUrl + "/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: lastMessage.content,
+            conversation_history: messages.slice(0, -1),
+          }),
+        })
+        if (response.ok) break
+        lastErr = new Error(`Backend service error: ${response.status}`)
+      } catch (e) {
+        lastErr = e
+      }
+      await new Promise((r) => setTimeout(r, 750))
+    }
+    if (!response || !response.ok) {
+      throw lastErr || new Error("Backend service error")
+    }
 
     if (!response.ok) {
       throw new Error(`Backend service error: ${response.status}`)
