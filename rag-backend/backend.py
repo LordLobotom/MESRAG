@@ -39,7 +39,7 @@ QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
 # Default points to API path to be compatible with latest Ollama
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:Q4_0")
 RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.7))
 
 # ====== Načtení embedovacího modelu ======
@@ -341,7 +341,13 @@ def chat_endpoint(request: ChatRequest):
                 "model": OLLAMA_MODEL,
                 "prompt": user_prompt,
                 "system": system_prompt,
-                "stream": False
+                "stream": False,
+                "options": {
+                    # keep inference light for low VRAM / faster responses
+                    "num_predict": 256,
+                    "num_ctx": 2048,
+                    "temperature": 0.2
+                }
             },
             timeout=180
         )

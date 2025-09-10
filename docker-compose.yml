@@ -3,7 +3,12 @@ services:
     build: .
     container_name: ollama
     environment:
-      - OLLAMA_MODEL=gpt-oss
+      - OLLAMA_MODEL=gpt-oss:Q4_0
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ollama list >/dev/null 2>&1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
     ports:
       - "11434:11434"
     volumes:
@@ -62,13 +67,20 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY=moc-tajny-klic-420
       - OLLAMA_URL=http://ollama:11434/api
-      - OLLAMA_MODEL=gpt-oss
+      - OLLAMA_MODEL=gpt-oss:Q4_0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/embed'); print('ok')"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
       - RELEVANCE_THRESHOLD=0.5
     volumes:
       - backend_data:/app/data
     depends_on:
-      - qdrant
-      - ollama
+      qdrant:
+        condition: service_started
+      ollama:
+        condition: service_healthy
     #ports:
     #  - "8001:8001"
     networks:
@@ -78,8 +90,10 @@ services:
     image: nginx:latest
     container_name: nginx
     depends_on:
-      - frontend
-      - backend
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"

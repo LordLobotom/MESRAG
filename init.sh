@@ -8,7 +8,7 @@ echo "[INIT] waiting for ollama to be ready..."
 sleep 5
 
 echo "[INIT] pulling Ollama model..."
-MODEL_NAME=${OLLAMA_MODEL:-gpt-oss}
+MODEL_NAME=${OLLAMA_MODEL:-gpt-oss:Q4_0}
 echo "[INIT] Model: $MODEL_NAME"
 ollama pull "$MODEL_NAME" || true
 
