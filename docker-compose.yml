@@ -3,7 +3,7 @@ services:
     build: .
     container_name: ollama
     environment:
-      - OLLAMA_MODEL=gpt-oss:Q4_0
+      - OLLAMA_MODEL=gpt-oss
     healthcheck:
       test: ["CMD", "sh", "-c", "ollama list >/dev/null 2>&1"]
       interval: 20s
@@ -67,7 +67,7 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY=moc-tajny-klic-420
       - OLLAMA_URL=http://ollama:11434/api
-      - OLLAMA_MODEL=gpt-oss:Q4_0
+      - OLLAMA_MODEL=gpt-oss
       - RELEVANCE_THRESHOLD=0.5
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health'); print('ok')"]

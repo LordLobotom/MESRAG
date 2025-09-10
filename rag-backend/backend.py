@@ -39,7 +39,7 @@ QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "moc-tajny-klic-420")
 # Default points to API path to be compatible with latest Ollama
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/api")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:Q4_0")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss")
 RELEVANCE_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", 0.7))
 
 # ====== Načtení embedovacího modelu ======
