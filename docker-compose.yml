@@ -36,6 +36,11 @@ services:
       - NODE_ENV=production
       - OLLAMA_BASE_URL=http://ollama:11434/api
       - BACKEND_URL=http://backend:8001
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 20s
+      timeout: 5s
+      retries: 10
     volumes:
       - backend_data:/app/data
     networks:
@@ -91,7 +96,7 @@ services:
     container_name: nginx
     depends_on:
       frontend:
-        condition: service_started
+        condition: service_healthy
       backend:
         condition: service_healthy
     ports:
