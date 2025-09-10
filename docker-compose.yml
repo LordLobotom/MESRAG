@@ -2,6 +2,8 @@ services:
   ollama:
     build: .
     container_name: ollama
+    environment:
+      - OLLAMA_MODEL=gpt-oss
     ports:
       - "11434:11434"
     volumes:
@@ -60,7 +62,7 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - QDRANT_API_KEY=moc-tajny-klic-420
       - OLLAMA_URL=http://ollama:11434/api
-      - OLLAMA_MODEL=deepseek-r1
+      - OLLAMA_MODEL=gpt-oss
       - RELEVANCE_THRESHOLD=0.5
     volumes:
       - backend_data:/app/data
