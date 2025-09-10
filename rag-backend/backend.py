@@ -343,7 +343,7 @@ def chat_endpoint(request: ChatRequest):
                 "system": system_prompt,
                 "stream": False
             },
-            timeout=60
+            timeout=180
         )
         
         if ollama_response.status_code != 200:
