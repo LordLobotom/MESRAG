@@ -68,12 +68,12 @@ services:
       - QDRANT_API_KEY=moc-tajny-klic-420
       - OLLAMA_URL=http://ollama:11434/api
       - OLLAMA_MODEL=gpt-oss:Q4_0
+      - RELEVANCE_THRESHOLD=0.5
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/embed'); print('ok')"]
       interval: 20s
       timeout: 5s
       retries: 10
-      - RELEVANCE_THRESHOLD=0.5
     volumes:
       - backend_data:/app/data
     depends_on:
