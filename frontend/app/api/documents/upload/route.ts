@@ -48,7 +48,13 @@ export async function POST(request: NextRequest) {
 
     // Trigger import process
     try {
-      const importResponse = await fetch("/trigger-import", {
+      const baseUrl =
+        process.env.BACKEND_URL ||
+        (process.env.NODE_ENV === "production"
+          ? "http://backend:8001"
+          : "http://localhost:8001")
+
+      const importResponse = await fetch(baseUrl + "/trigger-import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

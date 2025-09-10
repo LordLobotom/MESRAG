@@ -5,7 +5,11 @@ export async function POST(req: Request) {
 
     console.log("Frontend: Sending request to backend with query:", lastMessage.content)
 
-    const backendUrl = process.env.BACKEND_URL || "";
+    const backendUrl =
+      process.env.BACKEND_URL ||
+      (process.env.NODE_ENV === "production"
+        ? "http://backend:8001"
+        : "http://localhost:8001")
 
     const response = await fetch(backendUrl + "/chat", {
       method: "POST",
